@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Cobrinha 2D</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: white; font-family: Arial, sans-serif; overflow: hidden; }
+        #score { font-size: 24px; margin-bottom: 10px; font-weight: bold; }
+        canvas { background: #000; border: 4px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .controls { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 10px; margin-top: 20px; }
+        .btn { background: #444; border: none; color: white; font-size: 20px; font-weight: bold; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none; }
+        .btn:active { background: #666; }
+        .up { grid-column: 2; }
+        .left { grid-column: 1; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+    </style>
+</head>
+<body>
+
+    <div id="score">Pontos: 0</div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <!-- Controles para Celular -->
+    <div class="controls">
+        <button class="btn up" onclick="changeDirection('ArrowUp')">▲</button>
+        <button class="btn left" onclick="changeDirection('ArrowLeft')">◀</button>
+        <button class="btn down" onclick="changeDirection('ArrowDown')">▼</button>
+        <button class="btn right" onclick="changeDirection('ArrowRight')">▶</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [{ x: 10, y: 10 }];
+        let food = { x: 5, y: 5 };
+        let dx = 1;
+        let dy = 0;
+        let score = 0;
+        let gameInterval;
+
+        window.addEventListener("keydown", e => changeDirection(e.key));
+
+        function changeDirection(key) {
+            if (key === "ArrowLeft" && dx === 0) { dx = -1; dy = 0; }
+            if (key === "ArrowUp" && dy === 0) { dx = 0; dy = -1; }
+            if (key === "ArrowRight" && dx === 0) { dx = 1; dy = 0; }
+            if (key === "ArrowDown" && dy === 0) { dx = 0; dy = 1; }
+        }
+
+        function drawSquare(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * gridSize, y * gridSize, gridSize - 2, gridSize - 2);
+        }
+
+        function update() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // Colisão com as paredes ou corpo
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || 
+                snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                alert("Fim de Jogo! Pontos: " + score);
+                resetGame();
+                return;
+            }
+
+            snake.unshift(head);
+
+            // Verificar se comeu a comida
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                scoreElement.innerText = "Pontos: " + score;
+                generateFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Desenhar a comida (Vermelha)
+            drawSquare(food.x, food.y, "#ff4757");
+
+            // Desenhar a cobra (Verde)
+            snake.forEach((segment, index) => {
+                drawSquare(segment.x, segment.y, index === 0 ? "#2ed573" : "#26af5f");
+            });
+        }
+
+        function generateFood() {
+            food.x = Math.floor(Math.random() * tileCount);
+            food.y = Math.floor(Math.random() * tileCount);
+            // Evita comida em cima da cobra
+            if (snake.some(segment => segment.x === food.x && segment.y === food.y)) {
+                generateFood();
+            }
+        }
+
+        function resetGame() {
+            snake = [{ x: 10, y: 10 }];
+            dx = 1;
+            dy = 0;
+            score = 0;
+            scoreElement.innerText = "Pontos: " + score;
+            generateFood();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+        }
+
+        // Inicia o jogo rodando a cada 100ms
+        generateFood();
+        gameInterval = setInterval(gameLoop, 100);
+    </script>
+</body>
